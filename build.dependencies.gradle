@@ -4,6 +4,9 @@ repositories {
     flatDir {
         dirs rootProject.file('libs')
     }
+
+    // for ultrasonic
+    maven { url = 'https://jitpack.io' }
 }
 
 dependencies {
@@ -18,5 +21,8 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-lite-task-vision:0.2.0'
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'org.firstinspires.ftc:gameAssets-PowerPlay:1.0.0'
+
+    // for ultrasonic
+    implementation 'com.github.Eeshwar-Krishnan:PhotonFTC:v2.0.4'
 }
 
