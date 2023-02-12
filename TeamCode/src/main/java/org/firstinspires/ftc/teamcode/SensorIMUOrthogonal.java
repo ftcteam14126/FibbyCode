@@ -84,14 +84,14 @@ public class SensorIMUOrthogonal extends LinearOpMode
 {
     // The IMU sensor object
     IMU imu;
-    private Servo grabber = null;
+    private Servo deadWheelLift = null;
     public double servopos =0;
     //----------------------------------------------------------------------------------------------
     // Main logic
     //----------------------------------------------------------------------------------------------
 
     @Override public void runOpMode() throws InterruptedException {
-        grabber = hardwareMap.get(Servo .class,"grabber");
+        deadWheelLift = hardwareMap.get(Servo .class,"Deadwheel_Lift");
         // Retrieve and initialize the IMU.
         // This sample expects the IMU to be in a REV Hub and named "imu".
         imu = hardwareMap.get(IMU.class, "imu");
@@ -141,7 +141,7 @@ public class SensorIMUOrthogonal extends LinearOpMode
             telemetry.addData("Yaw (Z) velocity", "%.2f Deg/Sec", angularVelocity.zRotationRate);
             telemetry.addData("Pitch (X) velocity", "%.2f Deg/Sec", angularVelocity.xRotationRate);
             telemetry.addData("Roll (Y) velocity", "%.2f Deg/Sec", angularVelocity.yRotationRate);
-            telemetry.addData("Grabber", "%.4f", grabber.getPosition());
+            telemetry.addData("Deadwheel_Lift", "%.4f", deadWheelLift.getPosition());
             telemetry.update();
             if (gamepad1.dpad_up)
             servopos=servopos+0.0001;
@@ -152,7 +152,7 @@ public class SensorIMUOrthogonal extends LinearOpMode
             else if (gamepad1.dpad_right)
                 servopos=0.00;
 
-            grabber.setPosition(servopos);
+            deadWheelLift.setPosition(servopos);
         }
     }
 }

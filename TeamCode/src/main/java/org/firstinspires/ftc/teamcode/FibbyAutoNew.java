@@ -78,7 +78,7 @@ public class FibbyAutoNew extends LinearOpMode {
 
     //----------------------------------------------------------------------------------------------------
     // CONSTANT VARIABLES
-    static final double P_DRIVE_GAIN = 0.03;    // larger is more responsive, but also less stable
+    static final double P_DRIVE_GAIN = 0.05;    // larger is more responsive, but also less stable
 
     static final double tickToINCH = 1102;  // reading of the encoder per inch
     
@@ -91,22 +91,25 @@ public class FibbyAutoNew extends LinearOpMode {
     static final int plungeHeight = -160;
     static final int startHeight = 40;
 
-    static final int poleHigh = 1300;
-    static final int poleMid = 850;
-    static final int poleShort = 485;
+    static final int poleHigh = 1330;
+    static final int poleMid = 870;
+    static final int poleShort = 520;
 
     static final int zero = 20;
     static final int tolerance = 10;
 
-    static final int coneStack5 = 240;
-    static final int coneStack4 = 195;
-    static final int coneStack3 = 150;
-    static final int coneStack2 = 95;
+    static final int coneStack5 = 330;
+    static final int coneStack4 = 265;
+    static final int coneStack3 = 220;
+    static final int coneStack2 = 175;
     // NOT A CONSTANT
-    int grabHeight = 150;
+    int grabHeight = 130;
 
-    static final double reachIn = 0.47;
-    static final double reachOut = 0;
+    static final double reachOut = 0.47;
+    static final double reachIn = 0;
+
+    static final double deadwheelLift = 0.194;
+    static final double deadwheelLower = 0.2357;
 
     //----------------------------------------------------------------------------------------------------
     // REUSABLE VARIABLES
@@ -244,7 +247,8 @@ public class FibbyAutoNew extends LinearOpMode {
 
         //----------------------------------------------------------------------------------------------------
         // DO DURING INIT
-        
+        //reset reach
+        reach.setPosition(reachIn);
         // lower arm until limit switch is activated
         while (lowerLimit.getState() == true){
             topLift.setPower(-0.3);
@@ -252,8 +256,8 @@ public class FibbyAutoNew extends LinearOpMode {
         }
         // raise arm unit distance sensor see it
         while (distForZero.getDistance(DistanceUnit.MM) > 80) {
-            topLift.setPower(0.45);
-            bottomLift.setPower(-0.45);
+            topLift.setPower(0.6);
+            bottomLift.setPower(-0.6);
         }
 
         topLift.setPower(0);
@@ -268,7 +272,10 @@ public class FibbyAutoNew extends LinearOpMode {
         topLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         bottomLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        liftENC(grabHeight, 0.5);
+        liftENC(grabHeight, 1);
+        sleep(750);
+        topLift.setPower(0);
+        bottomLift.setPower(0);
 
         //----------------------------------------------------------------------------------------------------
         // QUESTIONS
@@ -358,15 +365,15 @@ public class FibbyAutoNew extends LinearOpMode {
             if (gamepad2.dpad_up|| gamepad1.dpad_up) {
                 conePlow.setPosition(plowLow);
                 liftENC(plungeHeight, -0.5);
-                sleep(1000);
+                sleep(500);
             }
             if (topLift.getCurrentPosition() <= -100 && grabber.getPosition() != closeGrabber){
                 topLift.setPower(0);
                 bottomLift.setPower(0);
                 grabber.setPosition(closeGrabber);
+                sleep(500);
+                liftENC(startHeight + 20, 1);
                 sleep(1000);
-                liftENC(startHeight, 0.75);
-                sleep(750);
                 topLift.setPower(0);
                 bottomLift.setPower(0);
                 conePlow.setPosition(plowHigh);
@@ -375,7 +382,8 @@ public class FibbyAutoNew extends LinearOpMode {
         
         //----------------------------------------------------------------------------------------------------
         // ENTER CODE BELOW:
-        coneDrop();
+        //coneDrop();
+        GyroDriveRange(-30, 0.5, 0, true, false, 10);
         sendTelemetry();
     }
 
@@ -385,15 +393,78 @@ public class FibbyAutoNew extends LinearOpMode {
 
     public void coneDrop()
     {
-        //go forward to push cone
+        // raise arm and move forward to push cone with bot
+        liftENC(poleHigh, 1);
         GyroDriveENC(50, 0.7, 0, true, true);
-        //move back a little
-        GyroDriveENC(45, 0.7, 0, false, false);
-        //turn to pull and raise arm
-        //reach and drop
+
+        // move back a little
+        GyroDriveENC(49.5, 0.2, 0, false, false);
+
+        // raise dead wheels, turn, lower dead wheels, and reach
+        deadWheelLift.setPosition(deadwheelLift);
+        GyroSpin(0.4, -35);
+        deadWheelLift.setPosition(deadwheelLower);
+        reach.setPosition(reachOut);
+
+        // move into pole a little and drop cone
+        GyroDriveENC(50.5, 0.5, -35, false, true);
+        grabber.setPosition(openGrabber);
+        sleep(500);
+        reach.setPosition(reachIn);
+
+        // back up a tad
+        GyroDriveENC(49.5, 0.2, -35, false, false);
+
         //turn to stack
-        //drive forward to grab cone
+        GyroSpin(0.4, 88);
+
+        // lift arm and drive to grab cone from stack
+        liftENC(coneStack5, -0.6);
+        GyroDriveENC(10, 0.6, 90, true, true);
+        GyroDriveDistStack(0.2, 90, false, 5);
+
+        // go to encoder 0
+        GyroDriveENC(4, 0.5, 90, false, false);
+        liftENC(poleHigh, 1);
+
+        // raise dead wheels, turn, lower dead wheels, and reach
+        deadWheelLift.setPosition(deadwheelLift);
+        sleep(500);
+        //reach.setPosition(reachOut);
+        GyroSpin(0.4, -35);
+        deadWheelLift.setPosition(deadwheelLower);
+        sleep(500);
+        GyroDriveENC(4, 0.3, -35, false, true);
+
+        grabber.setPosition(openGrabber);
+        sleep(500);
+        reach.setPosition(reachIn);
+
+
+
         //
+
+
+
+
+
+
+//        GyroDriveENC(-16, 0.6, 90, false, false);
+//        liftENC(poleHigh, 1);
+//        //Turn and go foward
+//        GyroSpin(0.4, 52);
+//        reach.setPosition(reachOut);
+//        GyroDriveENC(-21.5, 0.5, 52, false, true);
+//        grabber.setPosition(openGrabber);
+//        sleep(500);
+//        reach.setPosition(reachIn);
+//
+//        GyroDriveENC(-16, 0.5, 52, false, false);
+//        GyroSpin(0.4, 90);
+//        GyroDriveENC(0, 0.5, 90, false, true);
+
+
+
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -430,10 +501,10 @@ public class FibbyAutoNew extends LinearOpMode {
 
         double originPower = power;
 
-        while ((parallelEncoder.getCurrentPosition()/tickToINCH < distance && forward && opModeIsActive()) 
+        while ((parallelEncoder.getCurrentPosition()/tickToINCH < distance && forward && opModeIsActive())
                 || // OR
                 (parallelEncoder.getCurrentPosition()/tickToINCH > distance && !forward && opModeIsActive())) {
-            
+            sendTelemetry();
             getRawHeading();
 
             corrHeading = course - heading;
@@ -445,18 +516,118 @@ public class FibbyAutoNew extends LinearOpMode {
                 rightFrontPower = (power + diffCorrection);
                 rightRearPower = (power + diffCorrection);
             }
-            else {  //robot is drifting to the left, so we need to correct to the right
+            else if (corrHeading > 0){  //robot is drifting to the left, so we need to correct to the right
                 leftFrontPower = (power + diffCorrection);
                 leftRearPower = (power + diffCorrection);
                 rightFrontPower = (power - diffCorrection);
                 rightRearPower = (power - diffCorrection);
             }
+            else
+            {
+                leftFrontPower = (power);
+                leftRearPower = (power);
+                rightFrontPower = (power);
+                rightRearPower = (power);
+            }
 
             // ramping down
-            double delta = Math.abs(distance) - Math.abs(parallelEncoder.getCurrentPosition()/tickToINCH);
+            double delta = Math.abs((distance) - Math.abs(parallelEncoder.getCurrentPosition()/tickToINCH));
 
-            if (delta <= 4) {
+            if ((delta <= 4) && (forward)) {
                 if (power > 0.2) {
+                    power = (delta/4) * originPower;
+                }
+            }
+
+            if ((delta <= 4) && (!forward)) {
+                telemetry.update();
+
+                if (power < -0.2){
+                    power = (delta/4) * originPower;
+                }
+            }
+
+            leftFront.setPower(leftFrontPower);
+            leftRear.setPower(leftRearPower);
+            rightFront.setPower(rightFrontPower);
+            rightRear.setPower(rightRearPower);
+        }
+
+        leftFront.setPower(0);
+        leftRear.setPower(0);
+        rightFront.setPower(0);
+        rightRear.setPower(0);
+    }
+    public void GyroDriveRange(double distance, double power, double course, boolean reset, boolean forward, double range) {
+        // for telemetry
+        desiredCourse = course;
+
+        // turn off encoders for drive wheels
+        leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftRear.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightRear.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        // if reset is true, then reset the deal wheel encoders
+        if (reset == true) {
+            parallelEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            perpendicularEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        }
+
+        // set brake for drive wheels
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        // calcuate the motor power for direction
+        power = Math.abs(power);           //this ensures that if we are moving forward it is positive
+        if (!forward) {power = -power;}    // and if we are going backwards it is negative
+
+        double originPower = power;
+
+        while ((parallelEncoder.getCurrentPosition()/tickToINCH < distance && forward && opModeIsActive() && rangeSensor.getDistance(DistanceUnit.INCH) > range)
+                || // OR
+                (parallelEncoder.getCurrentPosition()/tickToINCH > distance && !forward && opModeIsActive() && rangeSensor.getDistance(DistanceUnit.INCH) > range)) {
+            sendTelemetry();
+            getRawHeading();
+
+            corrHeading = course - heading;
+            diffCorrection = Math.abs(corrHeading * P_DRIVE_GAIN);
+
+            if (corrHeading < 0) { //robot is drifting to the right, so we need to correct to the left
+                leftFrontPower = (power - diffCorrection);
+                leftRearPower = (power - diffCorrection);
+                rightFrontPower = (power + diffCorrection);
+                rightRearPower = (power + diffCorrection);
+            }
+            else if (corrHeading > 0){  //robot is drifting to the left, so we need to correct to the right
+                leftFrontPower = (power + diffCorrection);
+                leftRearPower = (power + diffCorrection);
+                rightFrontPower = (power - diffCorrection);
+                rightRearPower = (power - diffCorrection);
+            }
+            else
+            {
+                leftFrontPower = (power);
+                leftRearPower = (power);
+                rightFrontPower = (power);
+                rightRearPower = (power);
+            }
+
+            // ramping down
+            double delta = Math.abs((distance) - Math.abs(parallelEncoder.getCurrentPosition()/tickToINCH));
+
+            if ((delta <= 4) && (forward)) {
+                if (power > 0.2) {
+                    power = (delta/4) * originPower;
+                }
+            }
+
+            if ((delta <= 4) && (!forward)) {
+                telemetry.update();
+
+                if (power < -0.2){
                     power = (delta/4) * originPower;
                 }
             }
@@ -475,7 +646,7 @@ public class FibbyAutoNew extends LinearOpMode {
 
     //----------------------------------------------------------------------------------------------------
     // GyroStrafeENCStack
-    public void GyroDriveENCStack(double distance, double power, double course, boolean reset, boolean forward, int stack) {
+    public void GyroDriveDistStack(double power, double course, boolean reset, int stack) {
         // for telemetry
         desiredCourse = course;
 
@@ -505,14 +676,7 @@ public class FibbyAutoNew extends LinearOpMode {
                 (stack >= 2 && (distIntake.getDistance(DistanceUnit.MM) <= 30 || distIntake.getDistance(DistanceUnit.MM) >= 50))// stack of Cones
                 && 
                 (opModeIsActive())) {
-            
-            // calcuate the motor power for direction
-            power = Math.abs(power);           //this ensures that if we are moving forward it is positive
-            if (!forward) {power = -power;}    // and if we are going backwards it is negative
-    
-            while ((parallelEncoder.getCurrentPosition()/tickToINCH < distance && forward && opModeIsActive())
-                    ||
-                    (parallelEncoder.getCurrentPosition()/tickToINCH > distance && !forward && opModeIsActive())) {
+
                 getRawHeading();
     
                 corrHeading = course - heading;
@@ -530,24 +694,31 @@ public class FibbyAutoNew extends LinearOpMode {
                     rightRearPower = (power - diffCorrection);
                 }
     
-                // ramping down
-                if ((Math.abs(distance) - Math.abs(parallelEncoder.getCurrentPosition() / tickToINCH)) <= 4) {
-                    if (power > 0.2) {
-    
-                    }
-                }
-    
                 leftFront.setPower(leftFrontPower);
                 leftRear.setPower(leftRearPower);
                 rightFront.setPower(rightFrontPower);
                 rightRear.setPower(rightRearPower);
-            }
         }
 
         leftFront.setPower(0);
         leftRear.setPower(0);
         rightFront.setPower(0);
         rightRear.setPower(0);
+
+        if (stack == 5) {liftENC(coneStack5 - 160, -0.9);}
+        else if (stack == 4) {liftENC(coneStack4 - 110, -0.6);}
+        else if (stack == 3) {liftENC(coneStack3 -110, -0.6);}
+        else if (stack == 2) {liftENC(coneStack2 - 150, -0.6);}
+        else if (stack == 1) {liftENC(plungeHeight, 0.6);}
+
+        sleep(400);
+
+        grabber.setPosition(closeGrabber);
+        sleep(300);
+
+        liftENC(415, 0.75);
+        conePlow.setPosition(plowHigh);
+        sleep(750);
     }
     
     
@@ -763,22 +934,25 @@ public class FibbyAutoNew extends LinearOpMode {
 
     private void sendTelemetry() {
         telemetry.addData("Luxo", "Telemetry");
-        telemetry.addData("Angle Target:Current", "%5.2f:%5.0f", desiredCourse, heading);
-        telemetry.addData("Error:Steer",  "%5.1f:%5.1f", corrHeading, diffCorrection);
+//        telemetry.addData("Angle Target:Current", "%5.2f:%5.0f", desiredCourse, heading);
+//        telemetry.addData("Error:Steer",  "%5.1f:%5.1f", corrHeading, diffCorrection);
+//
+//        //telemetry.addLine();
+//
+//        telemetry.addData("Actual Pos Front L:R",  "%7d:%7d", leftFront.getCurrentPosition(), rightFront.getCurrentPosition());
+//        telemetry.addData("Actual Pos Rear  L:R",  "%7d:%7d", leftRear.getCurrentPosition(),  rightRear.getCurrentPosition());
+//
+//        //telemetry.addLine();
+//
+//        telemetry.addData("Wheel Speeds Front L:R.", "%5.2f : %5.2f", leftFrontPower, rightFrontPower);
+//        telemetry.addData("Wheel Speeds Rear  L:R.", "%5.2f : %5.2f", leftRearPower,  rightRearPower);
+//
+//        telemetry.addData("Actual Pos Para:Perp",  "%5.2f:%5.2f", parallelEncoder.getCurrentPosition()/tickToINCH, perpendicularEncoder.getCurrentPosition()/tickToINCH);
+
 
         //telemetry.addLine();
 
-        telemetry.addData("Actual Pos Front L:R",  "%7d:%7d", leftFront.getCurrentPosition(), rightFront.getCurrentPosition());
-        telemetry.addData("Actual Pos Rear  L:R",  "%7d:%7d", leftRear.getCurrentPosition(),  rightRear.getCurrentPosition());
-
-        //telemetry.addLine();
-
-        telemetry.addData("Wheel Speeds Front L:R.", "%5.2f : %5.2f", leftFrontPower, rightFrontPower);
-        telemetry.addData("Wheel Speeds Rear  L:R.", "%5.2f : %5.2f", leftRearPower,  rightRearPower);
-
-        //telemetry.addLine();
-
-        //telemetry.addData("rangeSensor", rangeSensor.getDistance(DistanceUnit.CM));
+        telemetry.addData("rangeSensor", rangeSensor.getDistance(DistanceUnit.INCH));
         telemetry.update();
 
     }

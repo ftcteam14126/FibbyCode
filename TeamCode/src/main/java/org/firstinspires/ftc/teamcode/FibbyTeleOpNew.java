@@ -84,12 +84,12 @@ public class FibbyTeleOpNew extends OpMode {
     static final double openGrabber  = 0.05;
     static final double closeGrabber = 0.0;
 
-    static final int plungeHeight = -160;
+    static final int plungeHeight = -150;
     static final int startHeight = 40;
 
-    static final int poleHigh = 1300;
-    static final int poleMid = 850;
-    static final int poleShort = 485;
+    static final int poleHigh = 1330;
+    static final int poleMid = 870;
+    static final int poleShort = 520;
 
     static final int zero = 20;
     static final int tolerance = 10;
@@ -102,7 +102,7 @@ public class FibbyTeleOpNew extends OpMode {
     static final int coneStack3 = 150;
     static final int coneStack2 = 95;
     // NOT CONSTANT
-    int grabHeight = 150;
+    int grabHeight = 190;
 
     static final double reachIn = 0.47;
     static final double reachOut = 0;
@@ -338,8 +338,8 @@ public class FibbyTeleOpNew extends OpMode {
 
         if (gamepad1.dpad_up){
             while (lowerLimit.getState() == true){
-                topLift.setPower(-0.25);
-                bottomLift.setPower(0.25);
+                topLift.setPower(-0.3);
+                bottomLift.setPower(0.3);
             }
             while (distForZero.getDistance(DistanceUnit.MM) > 80) {
                 topLift.setPower(0.4);
@@ -393,18 +393,19 @@ public class FibbyTeleOpNew extends OpMode {
         // safety to make sure we don't break ourselves
         if ((topLift.getCurrentPosition() >= poleHigh + 50) || (lowerLimit.getState() == true)) {liftPower = 0;}
 
-        // OLD CODE?
-        /*
-        if ((gamepad2.right_stick_y > 0 && lowerLimit.getState() == true) || (gamepad2.right_stick_y < 0 && topLift.getCurrentPosition() <= poleHigh+50))
-        {
-            if(gamepad2.right_stick_y < 0) {liftPower = gamepad2.right_stick_y;}
-            else {liftPower = gamepad2.right_stick_y * .75;}
-        }
-        else {liftButton = 'n';}
-        */
-
-        if (gamepad2.right_stick_y != 0) {
+        if (gamepad2.right_stick_y != 0) { // are we trying to manually control the arm?
             liftButton = 'n';
+            if (armDestSuccess) //not trying automonously move the arm, so give control to gamepad2 for finese
+                if ((gamepad2.right_stick_y > 0 && lowerLimit.getState() == true && topLift.getCurrentPosition() >= grabHeight) || (gamepad2.right_stick_y < 0 && topLift.getCurrentPosition() <= poleHigh + 50)) {
+                    if (gamepad2.right_stick_y < 0) {
+                        liftPower = gamepad2.right_stick_y * 0.55;
+                    } //going UP!
+                    else {
+                        liftPower = gamepad2.right_stick_y * .30;
+                    } // if moving arm down, slow it down a little bit
+                } else {
+                    liftButton = 'n';
+                }
         }
         else if (liftButton == 'a') { // arm to drive height//
             ArmHeight(startHeight, 0.75);
@@ -570,7 +571,7 @@ public class FibbyTeleOpNew extends OpMode {
     //----------------------------------------------------------------------------------------------------
     private void yoink() {
         if (coneNumber == 1)
-            grabHeight = 40;
+            grabHeight = 60;
         else if (coneNumber == 2)
             grabHeight = coneStack2;
         else if (coneNumber == 3)
@@ -587,28 +588,9 @@ public class FibbyTeleOpNew extends OpMode {
             cycles = 0;
         }
 
-        // OLD CODE?
-        /*
-        if (step == 1 && yoinkMode && cycles >= 2)  //set the boom height to be ready to grab a cone
-        {
-            ArmHeight(plungeHeight, 0.5);
-            if (armDestSuccess)
-                step =2;
-        }
 
-        if (step == 2 && yoinkMode) { // Now move the arm UP until the distance sensor sees the servo
-            if (distForZero.getDistance(DistanceUnit.MM) > 80)
-            {
-                liftPower = -0.6; //raise to distance sensor
-            }
-            else { //reached distance sensor, move motors back to encoder drive
-                step = 3;
-                liftPower = 0;
-            }
-        }
-        */
 
-        if (step == 1 && yoinkMode) //move up to grab height for cones 2-5 if grabbing from stack
+        if (step == 1 && yoinkMode) //move up to grab height for cones 1-5 if grabbing from stack
         {
             ArmHeight(grabHeight, 0.8);
             if (armDestSuccess) {
@@ -617,9 +599,6 @@ public class FibbyTeleOpNew extends OpMode {
                 seeCone = false;
             }
         }
-
-        // Step 4 - Ready to grab a cone, head unit is at correct height and distance sensors see cone, time to PARTY!
-        //  if (step==4 && yoinkMode == true && cycles >= 3 && Dist_Intake.getDistance(DistanceUnit.MM) <= 85 && Dist_Intake.getDistance(DistanceUnit.MM) >= 60 )   // do we see a cone in front of the robot?
 
         if (step == 4 && yoinkMode == true && cycles >= 3 && ((DistanceSensor) frontColorDist).getDistance(DistanceUnit.MM) <= 200)    // do we see a cone in front of the robot?
             if ((distIntake.getDistance(DistanceUnit.MM) >= 47 && coneNumber == 1 && distIntake.getDistance(DistanceUnit.MM) <= 67) || (distIntake.getDistance(DistanceUnit.MM) >= 30 && coneNumber >= 2 && distIntake.getDistance(DistanceUnit.MM) <= 67)) {// is the cone aligned left to right based on cone height?
@@ -640,7 +619,7 @@ public class FibbyTeleOpNew extends OpMode {
 
             if (step == 6 && cycles >= 6 && yoinkMode) {step = 7;}    // give grabber time to engage
 
-            if (step == 7 && yoinkMode) {
+            if (step == 7 && yoinkMode) { //lift arm
                 ArmHeight(330, 0.8);
                 if (armDestSuccess) {
                     liftPower = 0;
@@ -656,14 +635,14 @@ public class FibbyTeleOpNew extends OpMode {
         topLift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         bottomLift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        if (topLift.getCurrentPosition() - tolerance <= height && topLift.getCurrentPosition() + tolerance >= height) {
+        if (topLift.getCurrentPosition() - tolerance <= height && topLift.getCurrentPosition() + tolerance >= height) { //did we reach our desired height?
             liftPower = 0;
             armDestSuccess = true;
         }
         else if (topLift.getCurrentPosition() < height && topLift.getCurrentPosition() <= poleHigh)    // need to go up
         {
             armDestSuccess = false;
-            if (topLift.getCurrentPosition() + 100 >= height) {liftPower = -0.6;}   // slow the arm down to prevent over shooting
+            if (topLift.getCurrentPosition() + 100 >= height) {liftPower = -0.7;}   // slow the arm down to prevent over shooting
             else {liftPower = -power;}
         }
         else if (topLift.getCurrentPosition() > height && lowerLimit.getState() == true && topLift.getCurrentPosition() >= plungeHeight)    // need to go down but don't hit lower limit switch
@@ -700,8 +679,8 @@ public class FibbyTeleOpNew extends OpMode {
 
         //telemetry.addLine().
 
-        telemetry.addData("Actual Pos Front L:R",  "%7d:%7d", leftFront.getCurrentPosition(), rightFront.getCurrentPosition());
-        telemetry.addData("Actual Pos Rear  L:R",  "%7d:%7d", leftRear.getCurrentPosition(),  rightRear.getCurrentPosition());
+        //telemetry.addData("Actual Pos Front L:R",  "%7d:%7d", leftFront.getCurrentPosition(), rightFront.getCurrentPosition());
+        //telemetry.addData("Actual Pos Rear  L:R",  "%7d:%7d", leftRear.getCurrentPosition(),  rightRear.getCurrentPosition());
 
         //telemetry.addLine();
 
@@ -724,7 +703,7 @@ public class FibbyTeleOpNew extends OpMode {
 
         //telemetry.addLine();
 
-        telemetry.addData("rangeSensor", rangeSensor.getDistance(DistanceUnit.CM));
+        telemetry.addData("rangeSensor", rangeSensor.getDistance(DistanceUnit.INCH));
 
         //telemetry.addLine();
 
