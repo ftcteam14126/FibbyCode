@@ -76,12 +76,12 @@ public class FibbyTeleOpNew extends OpMode {
     // CONSTANT VARIABLES
     static final double P_DRIVE_GAIN = 0.03;    // larger is more responsive, but also less stable
 
-    static final double tickToINCH = 1068;  // reading of the encoder per inch
+    static final double tickToINCH = 1098;  // reading of the encoder per inch - was 1068
     
     static final double plowLow  = 0.32;
     static final double plowHigh = 0.24;
     
-    static final double openGrabber  = 0.05;
+    static final double openGrabber  = 0.04;
     static final double closeGrabber = 0.0;
 
     static final int plungeHeight = -150;
