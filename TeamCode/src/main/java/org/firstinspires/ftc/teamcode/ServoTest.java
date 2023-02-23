@@ -30,7 +30,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.IMU;
@@ -41,7 +40,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 /**
- * {@link SensorIMUOrthogonal} shows how to use the new universal {@link IMU} interface. This
+ * {@link} shows how to use the new universal {@link IMU} interface. This
  * interface may be used with the BNO055 IMU or the BHI260 IMU. It assumes that an IMU is configured
  * on the robot with the name "imu".
  * <p>
@@ -78,20 +77,50 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
  * Finally, choose the two correct parameters to define how your Hub is mounted and edit this OpMode
  * to use those parameters.
  */
-@TeleOp(name = "Sensor: IMU Orthogonal", group = "Sensor")
+@TeleOp(name = "ServoTest", group = "Sensor")
 //@Disabled   // Comment this out to add to the OpMode list
-public class SensorIMUOrthogonal extends LinearOpMode
+public class ServoTest extends LinearOpMode
 {
     // The IMU sensor object
     IMU imu;
     private Servo grabber = null;
+    private Servo deadWheels = null;
+    private Servo reach = null;
+    private Servo plow = null;
+
+    static final double plowLow  = 0.32;
+    static final double plowHigh = 0.24;
+
+    static final double openGrabber  = 0.03;
+    static final double closeGrabber = 0.0;
+
+    static final double reachOut = 0.47;
+    static final double reachIn = 0;
+
+    static final double deadwheelLift = 0.194;
+    static final double deadwheelLower = 0.2357;
+
     public double servopos =0;
+
+    public double deadWheelpos = deadwheelLower;
+    public double reachpos = reachOut;
+    public double plowpos = plowLow;
+
     //----------------------------------------------------------------------------------------------
     // Main logic
     //----------------------------------------------------------------------------------------------
 
     @Override public void runOpMode() throws InterruptedException {
         grabber = hardwareMap.get(Servo .class,"grabber");
+        grabber.setPosition(openGrabber);
+
+        plow = hardwareMap.get(Servo.class, "plow");
+        plow.setPosition(plowLow);
+
+        deadWheels = hardwareMap.get(Servo.class,"Deadwheel_Lift");
+
+        reach = hardwareMap.get(Servo.class, "reach");
+        reach.setPosition(reachIn);
         // Retrieve and initialize the IMU.
         // This sample expects the IMU to be in a REV Hub and named "imu".
         imu = hardwareMap.get(IMU.class, "imu");
@@ -135,24 +164,64 @@ public class SensorIMUOrthogonal extends LinearOpMode
             YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
             AngularVelocity angularVelocity = imu.getRobotAngularVelocity(AngleUnit.DEGREES);
 
-            telemetry.addData("Yaw (Z)", "%.2f Deg. (Heading)", orientation.getYaw(AngleUnit.DEGREES));
+            /*telemetry.addData("Yaw (Z)", "%.2f Deg. (Heading)", orientation.getYaw(AngleUnit.DEGREES));
             telemetry.addData("Pitch (X)", "%.2f Deg.", orientation.getPitch(AngleUnit.DEGREES));
             telemetry.addData("Roll (Y)", "%.2f Deg.\n", orientation.getRoll(AngleUnit.DEGREES));
             telemetry.addData("Yaw (Z) velocity", "%.2f Deg/Sec", angularVelocity.zRotationRate);
             telemetry.addData("Pitch (X) velocity", "%.2f Deg/Sec", angularVelocity.xRotationRate);
             telemetry.addData("Roll (Y) velocity", "%.2f Deg/Sec", angularVelocity.yRotationRate);
-            telemetry.addData("Deadwheel_Lift", "%.4f", grabber.getPosition());
+
+             */
+            telemetry.addData("grabber", "%.4f", grabber.getPosition());
+            telemetry.addData("reach", reach.getPosition());
+            telemetry.addData("deadWheelLift", deadWheels.getPosition());
+            telemetry.addData("plow", plow.getPosition());
             telemetry.update();
+
+            //grabber
             if (gamepad1.dpad_up)
-            servopos=servopos+0.0001;
+            servopos = servopos + 0.0001;
             else if (gamepad1.dpad_down)
-                servopos=servopos-0.0001;
+                servopos = servopos - 0.0001;
             else if (gamepad1.dpad_left)
-                servopos=0.04;
+                servopos = openGrabber;
             else if (gamepad1.dpad_right)
-                servopos=0.00;
+                servopos = closeGrabber;
+
+            //reach
+            if (gamepad2.dpad_up)
+                reachpos = reachpos + 0.0001;
+            else if (gamepad2.dpad_down)
+                reachpos = reachpos - 0.0001;
+            else if (gamepad2.dpad_left)
+                reachpos = reachOut;
+            else if (gamepad2.dpad_right)
+                reachpos = reachIn;
+
+            //DeadWheels
+            if (gamepad1.a)
+                deadWheelpos = deadWheelpos + 0.0001;
+            else if (gamepad1.b)
+                deadWheelpos = deadWheelpos - 0.0001;
+            else if (gamepad1.x)
+                deadWheelpos = deadwheelLift;
+            else if (gamepad1.y)
+                deadWheelpos = deadwheelLower;
+
+            //Plow
+            if (gamepad2.a)
+                plowpos = plowpos + 0.0001;
+            else if (gamepad2.b)
+                plowpos = plowpos - 0.0001;
+            else if (gamepad2.x)
+                plowpos = plowHigh;
+            else if (gamepad2.y)
+                plowpos = plowLow;
 
             grabber.setPosition(servopos);
+            reach.setPosition(reachpos);
+            deadWheels.setPosition(deadWheelpos);
+            plow.setPosition(plowpos);
         }
     }
 }

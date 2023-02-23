@@ -9,6 +9,7 @@ import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.IMU;
@@ -18,6 +19,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.SolomonRandom.MB1242Ex;
@@ -37,8 +39,8 @@ public class FibbyTeleOpNew extends OpMode {
     private double rightFrontPower = 0;
     private double rightRearPower  = 0;
 
-    private DcMotor topLift    = null;  // these are the arm motors
-    private DcMotor bottomLift = null;
+    private DcMotorEx topLift    = null;  // these are the arm motors
+    private DcMotorEx bottomLift = null;
 
     private double liftPower = 0;
 
@@ -93,14 +95,14 @@ public class FibbyTeleOpNew extends OpMode {
 
     static final int zero = 20;
     static final int tolerance = 10;
-
+    static final int maxArmAmpUp = 7;
     double raisePower = 0.9;
     double lowerPower = 0.6;
 
-    static final int coneStack5 = 240;
-    static final int coneStack4 = 195;
-    static final int coneStack3 = 150;
-    static final int coneStack2 = 95;
+    static final int coneStack5 = 280;
+    static final int coneStack4 = 235;
+    static final int coneStack3 = 190;
+    static final int coneStack2 = 135;
     // NOT CONSTANT
     int grabHeight = 190;
 
@@ -129,6 +131,8 @@ public class FibbyTeleOpNew extends OpMode {
     boolean armDestSuccess = false;
 
     boolean displaytelementry = false;
+    boolean ArmReset = false;
+    int ArmResetStep = 1;
 
     //----------------------------------------------------------------------------------------------------
     // LIGHT CONTROL VARIABLES
@@ -147,8 +151,8 @@ public class FibbyTeleOpNew extends OpMode {
         parallelEncoder      = hardwareMap.get(DcMotor.class, "parallelEncoder");
         perpendicularEncoder = hardwareMap.get(DcMotor.class, "perpendicularEncoder");
         
-        topLift = hardwareMap.get(DcMotor.class,"Lift");
-        bottomLift = hardwareMap.get(DcMotor.class,"Lift2");
+        topLift = hardwareMap.get(DcMotorEx.class,"Lift");
+        bottomLift = hardwareMap.get(DcMotorEx.class,"Lift2");
         
         // SET THE MOTOR DIRECTION (to make it drive correctly)
         leftFront.setDirection(DcMotor.Direction.REVERSE);
@@ -159,8 +163,8 @@ public class FibbyTeleOpNew extends OpMode {
         parallelEncoder.setDirection(DcMotor.Direction.REVERSE);
         perpendicularEncoder.setDirection(DcMotor.Direction.REVERSE);
 
-        topLift.setDirection(DcMotor.Direction.REVERSE);
-        bottomLift.setDirection(DcMotor.Direction.REVERSE);
+        topLift.setDirection(DcMotorEx.Direction.REVERSE);
+        bottomLift.setDirection(DcMotorEx.Direction.REVERSE);
 
         // RESET THE ENCODERS AND SET THE MOTORS TO BRAKE MODE
         leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -171,16 +175,16 @@ public class FibbyTeleOpNew extends OpMode {
         parallelEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         perpendicularEncoder.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        topLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        bottomLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        topLift.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        bottomLift.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         
        /* leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightRear.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);*/
 
-        topLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        bottomLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        topLift.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        bottomLift.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
         // ALLOW OR NOT ALLOW ENCODERS
         leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -188,8 +192,8 @@ public class FibbyTeleOpNew extends OpMode {
         rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightRear.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        topLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        bottomLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        topLift.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        bottomLift.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
         
         // SET POWER
         topLift.setPower(0);
@@ -336,26 +340,37 @@ public class FibbyTeleOpNew extends OpMode {
             rightRearPower = 0;
         }
 
-        if (gamepad1.dpad_up){
-            while (lowerLimit.getState() == true){
-                topLift.setPower(-0.3);
-                bottomLift.setPower(0.3);
-            }
-            while (distForZero.getDistance(DistanceUnit.MM) > 80) {
-                topLift.setPower(0.4);
-                bottomLift.setPower(-0.4);
-            }
-            topLift.setPower(0);
-            bottomLift.setPower(0);
+        if (gamepad1.dpad_up) {
+            ArmReset = true;
+            ArmResetStep = 1;
+            topLift.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+            bottomLift.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        }
 
-            topLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            topLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        if (ArmReset) {
+            sendTelemetry();
+            telemetry.addData("ArmResetStep", ArmResetStep);
+            telemetry.addData("LiftPower", liftPower);
+                if (ArmResetStep == 1) {
+                    if (lowerLimit.getState() == true && topLift.getCurrent(CurrentUnit.AMPS) < 4) {
+                       liftPower = 0.4;
 
-            bottomLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            bottomLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                    }
+                    else {
+                        ArmResetStep = 2;
+                        liftPower = -0.5; //Send arm UP to the Distance Sensor
 
-            topLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-            bottomLift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+                    }
+                }
+                else if (ArmResetStep==2) {
+                    if (distForZero.getDistance(DistanceUnit.MM) > 80) {} // Wait for Arm to reach distance Sensor
+                    else { //Arm reached distance sensor, RESET encoder
+                        ArmReset = false;
+                        liftPower = 0;
+                        topLift.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+                        bottomLift.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+                    }
+                }
         }
         //Test Code
         if (gamepad1.dpad_left){
@@ -391,9 +406,9 @@ public class FibbyTeleOpNew extends OpMode {
         */
 
         // safety to make sure we don't break ourselves
-        if ((topLift.getCurrentPosition() >= poleHigh + 50) || (lowerLimit.getState() == true)) {liftPower = 0;}
+       // if ((topLift.getCurrentPosition() >= poleHigh + 50) || (lowerLimit.getState() == true && !ArmReset)) {liftPower = 0;}
 
-        if (gamepad2.right_stick_y != 0) { // are we trying to manually control the arm?
+        if (gamepad2.right_stick_y != 0 && !ArmReset) { // are we trying to manually control the arm?
             liftButton = 'n';
             if (armDestSuccess) //not trying automonously move the arm, so give control to gamepad2 for finese
                 if ((gamepad2.right_stick_y > 0 && lowerLimit.getState() == true && topLift.getCurrentPosition() >= grabHeight) || (gamepad2.right_stick_y < 0 && topLift.getCurrentPosition() <= poleHigh + 50)) {
@@ -407,34 +422,35 @@ public class FibbyTeleOpNew extends OpMode {
                     liftButton = 'n';
                 }
         }
-        else if (liftButton == 'a') { // arm to drive height//
+        else if (liftButton == 'a' && !ArmReset) { // arm to drive height//
             ArmHeight(startHeight, 0.75);
             if (armDestSuccess) {
                 liftButton = 'n';
                 liftPower = 0.0;
             }
         }
-        else if (liftButton == 'b') {   // arm to low junction
+        else if (liftButton == 'b' && !ArmReset) {   // arm to low junction
             {
                 ArmHeight(poleShort, 0.85);
                 if (armDestSuccess) {liftButton = 'n';}
             }
         }
-        else if (liftButton == 'x') {   // arm to medium junction
+        else if (liftButton == 'x' && !ArmReset) {   // arm to medium junction
             ArmHeight(poleMid, 1);
             if (armDestSuccess) {liftButton = 'n';}
         }
-        else if (liftButton == 'y') {   // arm to high junction
+        else if (liftButton == 'y' && !ArmReset) {   // arm to high junction
             ArmHeight(poleHigh, 1);
             if (armDestSuccess) {liftButton = 'n';}
         }
-        else if (liftButton == 'l') {   // arm to plunge height
+        else if (liftButton == 'l' && !ArmReset) {   // arm to plunge height
             ArmHeight(plungeHeight, 0.75);
             if (armDestSuccess) {liftButton = 'n';}
         }
-        else {
+        else if (ArmReset) {}
+        else
             liftPower = 0;
-        }
+
         if (yoinkMode == false) {
             step = 0;
             conePlow.setPosition(plowHigh);
@@ -571,7 +587,7 @@ public class FibbyTeleOpNew extends OpMode {
     //----------------------------------------------------------------------------------------------------
     private void yoink() {
         if (coneNumber == 1)
-            grabHeight = 60;
+            grabHeight = 80;
         else if (coneNumber == 2)
             grabHeight = coneStack2;
         else if (coneNumber == 3)
@@ -620,7 +636,7 @@ public class FibbyTeleOpNew extends OpMode {
             if (step == 6 && cycles >= 6 && yoinkMode) {step = 7;}    // give grabber time to engage
 
             if (step == 7 && yoinkMode) { //lift arm
-                ArmHeight(330, 0.8);
+                ArmHeight(355, 0.8);
                 if (armDestSuccess) {
                     liftPower = 0;
                     yoinkMode = false;
@@ -632,10 +648,10 @@ public class FibbyTeleOpNew extends OpMode {
     }
 
     private void ArmHeight (double height, double power) {
-        topLift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        bottomLift.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        topLift.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        bottomLift.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
 
-        if (topLift.getCurrentPosition() - tolerance <= height && topLift.getCurrentPosition() + tolerance >= height) { //did we reach our desired height?
+        if ((topLift.getCurrentPosition() - tolerance <= height && topLift.getCurrentPosition() + tolerance >= height) || topLift.getCurrent(CurrentUnit.AMPS) >= maxArmAmpUp) { //did we reach our desired height?
             liftPower = 0;
             armDestSuccess = true;
         }
@@ -697,17 +713,19 @@ public class FibbyTeleOpNew extends OpMode {
 
         //telemetry.addLine();
 
-        //telemetry.addData("distForZero", distForZero.getDistance(DistanceUnit.MM));
+        telemetry.addData("distForZero", distForZero.getDistance(DistanceUnit.MM));
         //telemetry.addData("frontColorSensor", ((DistanceSensor) frontColorDist).getDistance(DistanceUnit.MM));
         //telemetry.addData("distIntake", distIntake.getDistance(DistanceUnit.MM));
 
         //telemetry.addLine();
 
-        telemetry.addData("rangeSensor", rangeSensor.getDistance(DistanceUnit.INCH));
+        //telemetry.addData("rangeSensor", rangeSensor.getDistance(DistanceUnit.INCH));
 
         //telemetry.addLine();
 
         //telemetry.addData("Cycles", "%.3f", cycles);
+        telemetry.addData("topLift Draw", topLift.getCurrent(CurrentUnit.AMPS));
+               // telemetry.addData( "Bottom", bottomLift.getCurrent(CurrentUnit.AMPS));
 
         telemetry.update();
     }
