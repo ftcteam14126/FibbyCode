@@ -83,7 +83,7 @@ public class FibbyTeleOpNew extends OpMode {
     static final double plowLow  = 0.32;
     static final double plowHigh = 0.24;
     
-    static final double openGrabber  = 0.04;
+    static final double openGrabber  = 0.0455;
     static final double closeGrabber = 0.0;
 
     static final int plungeHeight = -150;
@@ -718,8 +718,7 @@ public class FibbyTeleOpNew extends OpMode {
         //telemetry.addData("distIntake", distIntake.getDistance(DistanceUnit.MM));
 
         //telemetry.addLine();
-
-        //telemetry.addData("rangeSensor", rangeSensor.getDistance(DistanceUnit.INCH));
+        telemetry.addData("rangeSensor", rangeSensor.getDistance(DistanceUnit.INCH));
 
         //telemetry.addLine();
 

@@ -91,7 +91,7 @@ public class ServoTest extends LinearOpMode
     static final double plowLow  = 0.32;
     static final double plowHigh = 0.24;
 
-    static final double openGrabber  = 0.03;
+    static final double openGrabber  = 0.0455;
     static final double closeGrabber = 0.0;
 
     static final double reachOut = 0.47;

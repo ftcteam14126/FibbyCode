@@ -105,7 +105,7 @@ public class FibbyAuto23 extends LinearOpMode {
     static final double plowLow  = 0.32;
     static final double plowHigh = 0.24;
     
-    static final double openGrabber  = 0.03;
+    static final double openGrabber  = 0.0455;
     static final double closeGrabber = 0.0;
 
     static final int plungeHeight = -160;
@@ -147,6 +147,8 @@ public class FibbyAuto23 extends LinearOpMode {
 
     boolean onePlusThreeAuto = false;
     boolean safeParking = false;
+    boolean preLoad = false;
+    boolean midJunction = false;
 
     double desiredCourse = 0;   // telemetry use
 
@@ -327,6 +329,7 @@ public class FibbyAuto23 extends LinearOpMode {
 
         //----------------------------------------------------------------------------------------------------
         // QUESTIONS
+        /*
         telemetry.addLine("Left Side - □ | Right Side - O");
         telemetry.update();
 
@@ -351,7 +354,7 @@ public class FibbyAuto23 extends LinearOpMode {
             }
         }
 
-        telemetry.addLine("conedrop - dpadup | safeParking - dpaddown");
+        telemetry.addLine("conedrop - dpadup | safeParking - dpaddown | preLoad - dpadleft | midJunction - dpadright");
         telemetry.update();
 
         questionAnswered = false;
@@ -362,6 +365,14 @@ public class FibbyAuto23 extends LinearOpMode {
             }
             else if (gamepad1.dpad_down || gamepad2.dpad_down){
                 safeParking = true;
+                questionAnswered = true;
+            }
+            else if (gamepad1.dpad_left || gamepad2.dpad_left){
+                preLoad = true;
+                questionAnswered = true;
+            }
+            else if (gamepad1.dpad_right || gamepad2.dpad_right){
+                midJunction = true;
                 questionAnswered = true;
             }
             else
@@ -375,6 +386,7 @@ public class FibbyAuto23 extends LinearOpMode {
             }
 
         }
+        */
         //----------------------------------------------------------------------------------------------------
         // CAMERA/VUFORIA THINGS
 
@@ -455,22 +467,249 @@ public class FibbyAuto23 extends LinearOpMode {
 
         //----------------------------------------------------------------------------------------------------
         // ENTER CODE BELOW:
-        if (onePlusThreeAuto){
-            resetRuntime();
-            coneDrop();
-        }
-        else if (safeParking) {
-            safeParking();
-        }
-        else {
-            // do nothing
-        }
+//        if (midJunction){
+//            resetRuntime();
+//            midJunction();
+//        }
+//        if (preLoad){
+//            preLoad();
+//        }
+//        if (onePlusThreeAuto){
+//            resetRuntime();
+//            coneDrop();
+//        }
+//        else if (safeParking) {
+//            safeParking();
+//        }
+//        else {
+//            // do nothing
+//        }
+
+        remoteAuto();
+
+
+
     }
 
 
     //----------------------------------------------------------------------------------------------------
     // OUR AUTONOMOUS RUNS
     //----------------------------------------------------------------------------------------------------
+
+    public void remoteAuto()
+    {
+        // set plow high
+        conePlow.setPosition(plowHigh);
+
+        // lift arm
+        liftENC(poleMid, 1);
+
+        // drive forward to mid of field
+        GyroDriveENC(2, 0.7, -3, true, true, true, false);
+        GyroDriveENC(4, 0.25, -3, false, true, true, false);
+        GyroDriveENC(29, 0.2, -3, false, true, true, true);
+
+        // turn off lift motors
+        topLift.setPower(0);
+        bottomLift.setPower(0);
+
+        // reach out and spin to mid pole
+        reach.setPosition(reachOut);
+        GyroSpin(0.5, -42);
+
+        // drop the come and retract reach
+        grabber.setPosition(openGrabber);
+        sleep(175);
+        reach.setPosition(reachIn);
+
+        // spin to face 0 (forward)
+        GyroSpin(0.5, 0);
+
+        // shove cone out of the way and move back a tad
+        GyroDriveENC(10.25, 0.55, 0, true, true, true, true);
+        //GyroDriveENC(-0.5, 0.25, 0, true, false, true, true);
+
+        // spin to stack
+        GyroSpin(0.55, 88);
+        liftENC(coneStack5, -0.6);
+
+        // move toward stack and grab a cone
+        GyroDriveENC(8, 0.8, 90, true, true, true, true);
+        GyroDriveDistStack(0.25, 90, true, 5);
+
+        // move backwards
+        double RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
+        if (RangedDistance <= 28 || RangedDistance >= 32)
+            RangedDistance = -29;
+        else
+            RangedDistance = -RangedDistance;
+        //sendTelemetry("Done Range");
+        GyroDriveENC(RangedDistance + 19, 0.6, 90, true, false, true, true);
+        liftENC(poleShort, 1);
+
+        reach.setPosition(reachOut);
+        GyroSpin(0.5, 140);
+
+        topLift.setPower(0);
+        bottomLift.setPower(0);
+
+        //GyroDriveENC(1, 0.3, -35, true, true, true, true);
+        grabber.setPosition(openGrabber);
+        sleep(250);
+        reach.setPosition(reachIn);
+
+        /////////////////////////////////////////CONE 2/////////////////////////////////////////////
+
+        // spin to stack
+        GyroSpin(0.55, 90);
+        liftENC(coneStack5, -0.6);
+
+        // move toward stack and grab a cone
+        GyroDriveENC(7, 0.8, 91.5, true, true, true, true);
+        GyroDriveDistStack(0.25, 90, true, 4);
+
+        // move backwards
+        RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
+        if (RangedDistance <= 28 || RangedDistance >= 32)
+            RangedDistance = -29;
+        else
+            RangedDistance = -RangedDistance;
+
+        //sendTelemetry("Done Range");
+        GyroDriveENC(RangedDistance + 19, 0.6, 90, true, false, true, true);
+        liftENC(poleShort, 1);
+
+        reach.setPosition(reachOut);
+        GyroSpin(0.5, 138);
+
+        topLift.setPower(0);
+        bottomLift.setPower(0);
+
+
+        //GyroDriveENC(1, 0.3, -35, true, true, true, true);
+        grabber.setPosition(openGrabber);
+        sleep(250);
+        reach.setPosition(reachIn);
+
+        /////////////////////////////////////////CONE 3/////////////////////////////////////////////
+
+        // spin to stack
+        GyroSpin(0.55, 90);
+        liftENC(coneStack5, -0.6);
+
+        // move toward stack and grab a cone
+        GyroDriveENC(7, 0.8, 91.5, true, true, true, true);
+        GyroDriveDistStack(0.25, 90, true, 3);
+
+        // move backwards
+        RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
+        if (RangedDistance <= 28 || RangedDistance >= 32)
+            RangedDistance = -29;
+        else
+            RangedDistance = -RangedDistance;
+        //sendTelemetry("Done Range");
+        GyroDriveENC(RangedDistance + 19, 0.6, 90, true, false, true, true);
+        liftENC(poleShort, 1);
+
+        reach.setPosition(reachOut);
+        GyroSpin(0.5, 138);
+
+        topLift.setPower(0);
+        bottomLift.setPower(0);
+        /*
+
+        //GyroDriveENC(1, 0.3, -35, true, true, true, true);
+        grabber.setPosition(openGrabber);
+        sleep(250);
+        reach.setPosition(reachIn);
+
+        /////////////////////////////////////////CONE 4/////////////////////////////////////////////
+
+        // spin to stack
+        GyroSpin(0.55, 95);
+        liftENC(coneStack5, -0.6);
+
+        // move toward stack and grab a cone
+        GyroDriveENC(7, 0.8, 91.5, true, true, true, true);
+        GyroDriveDistStack(0.25, 90, true, 2);
+
+        // move backwards
+        RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
+        if (RangedDistance <= 28 || RangedDistance >= 32)
+            RangedDistance = -29;
+        else
+            RangedDistance = -RangedDistance;
+        //sendTelemetry("Done Range");
+        GyroDriveENC(RangedDistance + 19, 0.6, 90, true, false, true, true);
+        liftENC(poleShort, 1);
+
+        reach.setPosition(reachOut);
+        GyroSpin(0.5, 138);
+
+        topLift.setPower(0);
+        bottomLift.setPower(0);
+
+        //GyroDriveENC(1, 0.3, -35, true, true, true, true);
+        grabber.setPosition(openGrabber);
+        sleep(250);
+        reach.setPosition(reachIn);
+
+        /////////////////////////////////////////CONE 5/////////////////////////////////////////////
+
+        // spin to stack
+        GyroSpin(0.55, 95);
+        liftENC(coneStack5, -0.6);
+
+        // move toward stack and grab a cone
+        GyroDriveENC(7, 0.8, 91.5, true, true, true, true);
+        GyroDriveDistStack(0.25, 90, true, 1);
+
+        // move backwards
+        RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
+        if (RangedDistance <= 28 || RangedDistance >= 32)
+            RangedDistance = -29;
+        else
+            RangedDistance = -RangedDistance;
+
+        GyroDriveENC(RangedDistance + 19, 0.6, 90, true, false, true, true);
+        liftENC(poleShort, 1);
+
+        reach.setPosition(reachOut);
+        GyroSpin(0.5, 138);
+
+        topLift.setPower(0);
+        bottomLift.setPower(0);
+
+        grabber.setPosition(openGrabber);
+        sleep(250);
+        reach.setPosition(reachIn);
+
+        /////////////////////////////////////////PARK///////////////////////////////////////////////
+        if (coneImage == 1) {                                                                       // rose
+            liftENC(coneStack5, 0.6);
+            GyroSpin(0.5, 90);
+            GyroDriveENC(12, 0.5, 90, true, false, true, true);
+        } else if (coneImage == 2) {                                                                // snail
+            liftENC(coneStack5, 0.6);
+            GyroSpin(0.55, 90);
+            GyroDriveENC(-1, 0.5, 90, true, false, true, true);
+        } else {                                                                                    // pineapple
+            liftENC(coneStack5, 0.6);
+            GyroSpin(0.55, 90);
+            GyroDriveENC(8, 0.5, 90, true, false, true, true);
+        }
+
+        */
+
+    }
+
+
+
+
+
+
+
+
 
     public void coneDrop()
     {
@@ -504,15 +743,16 @@ public class FibbyAuto23 extends LinearOpMode {
 
             // lift arm and drive to grab cone from stack
             liftENC(coneStack5, -0.6);
-            GyroDriveENC(10, 0.7, 91.5, true, true, true, true);
+            GyroDriveENC(10, 0.8, 91.5, true, true, true, true);
             GyroDriveDistStack(0.25, 90, true, 5);
-
+            sendTelemetry("Out of Stack, now range");
 //        GyroDriveENC(4, 0.5, 90, true, false);
             double RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
             if (RangedDistance <= 28 || RangedDistance >= 32)
                 RangedDistance = -29;
             else
                 RangedDistance = -RangedDistance;
+            //sendTelemetry("Done Range");
             GyroDriveENC(RangedDistance + 12, 0.6, 90, true, false, true, true);
             liftENC(poleHigh, 1);
 
@@ -529,72 +769,134 @@ public class FibbyAuto23 extends LinearOpMode {
 
 
 //########################################### CONE #2 ###########################################
-            // back up a tad
-            //GyroDriveENC(-2, 0.4, -35, true, false, true, true);
+            if (getRuntime() <= 23) {
+                //turn to stack
+                GyroSpin(0.55, 88);
 
-            //turn to stack
-            GyroSpin(0.55, 88);
+                // lift arm and drive to grab cone from stack
+                liftENC(coneStack5, -0.6);
+                GyroDriveENC(10, 0.8, 92, true, true, true, true);
+                GyroDriveDistStack(0.25, 90, true, 4);
 
-            // lift arm and drive to grab cone from stack
-            liftENC(coneStack5, -0.6);
-            GyroDriveENC(10, 0.7, 92, true, true, true, true);
-            GyroDriveDistStack(0.25, 90, true, 4);
-
-            // go to encoder 0
+                // go to encoder 0
 //        GyroDriveENC(4, 0.5, 90, true, false);
-            RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
-            if (RangedDistance <= 28 || RangedDistance >= 32)
-                RangedDistance = -29;
-            else
-                RangedDistance = -RangedDistance;
-            GyroDriveENC(RangedDistance + 12, 0.6, 90, true, false, true, true);
-            liftENC(poleHigh, 1);
+                RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
+                if (RangedDistance <= 28 || RangedDistance >= 32)
+                    RangedDistance = -29;
+                else
+                    RangedDistance = -RangedDistance;
+                GyroDriveENC(RangedDistance + 12, 0.6, 90, true, false, true, true);
+                liftENC(poleHigh, 1);
 
-            reach.setPosition(reachOut);
-            GyroSpin(0.5, -20);
+                reach.setPosition(reachOut);
+                GyroSpin(0.5, -20);
 
-            topLift.setPower(0);
-            bottomLift.setPower(0);
+                topLift.setPower(0);
+                bottomLift.setPower(0);
 
-            //GyroDriveENC(1, 0.3, -35, true, true, true, true);
-            grabber.setPosition(openGrabber);
-            sleep(175);
-            reach.setPosition(reachIn);
+                //GyroDriveENC(1, 0.3, -35, true, true, true, true);
+                grabber.setPosition(openGrabber);
+                sleep(175);
+                reach.setPosition(reachIn);
+            }
 
 //########################################### CONE #3 ###########################################
-            // back up a tad
-            //GyroDriveENC(-2, 0.4, -35, true, false, true, true);
+            if (getRuntime() <= 23) {
+                //turn to stack
+                GyroSpin(0.55, 88);
 
-            //turn to stack
-            GyroSpin(0.55, 88);
+                // lift arm and drive to grab cone from stack
+                liftENC(coneStack5, -0.6);
+                GyroDriveENC(10, 0.8, 92, true, true, true, true);
+                GyroDriveDistStack(0.25, 90, true, 3);
 
-            // lift arm and drive to grab cone from stack
-            liftENC(coneStack5, -0.6);
-            GyroDriveENC(10, 0.7, 92, true, true, true, true);
-            GyroDriveDistStack(0.25, 90, true, 3);
-
-            // go to encoder 0
+                // go to encoder 0
 //        GyroDriveENC(4, 0.5, 90, true, false);
-            RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
-            if (RangedDistance <= 28 || RangedDistance >= 32)
-                RangedDistance = -29;
-            else
-                RangedDistance = -RangedDistance;
-            GyroDriveENC(RangedDistance + 12, 0.6, 90, true, false, true, true);
-            liftENC(poleHigh, 1);
+                RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
+                if (RangedDistance <= 28 || RangedDistance >= 32)
+                    RangedDistance = -29;
+                else
+                    RangedDistance = -RangedDistance;
+                GyroDriveENC(RangedDistance + 12, 0.6, 90, true, false, true, true);
+                liftENC(poleHigh, 1);
 
-            reach.setPosition(reachOut);
-            GyroSpin(0.5, -20);
+                reach.setPosition(reachOut);
+                GyroSpin(0.5, -20);
 
-            topLift.setPower(0);
-            bottomLift.setPower(0);
+                topLift.setPower(0);
+                bottomLift.setPower(0);
 
-            //GyroDriveENC(1, 0.3, -35, true, true, true, true);
-            grabber.setPosition(openGrabber); //let go of Cone
-            sleep(175);
-            //GyroDriveENC(-2.5, 0.3, -35, true, false);
-            reach.setPosition(reachIn);
-            //GyroDriveENC(-1.75, 0.4, -35, true, false, true, true);
+                //GyroDriveENC(1, 0.3, -35, true, true, true, true);
+                grabber.setPosition(openGrabber); //let go of Cone
+                sleep(175);
+                //GyroDriveENC(-2.5, 0.3, -35, true, false);
+                reach.setPosition(reachIn);
+                //GyroDriveENC(-1.75, 0.4, -35, true, false, true, true);
+            }
+            if (getRuntime() <= 22){
+                //turn to stack
+                GyroSpin(0.55, 88);
+
+                // lift arm and drive to grab cone from stack
+                liftENC(coneStack5, -0.6);
+                GyroDriveENC(10, 0.8, 92, true, true, true, true);
+                GyroDriveDistStack(0.25, 90, true, 3);
+
+                // go to encoder 0
+//        GyroDriveENC(4, 0.5, 90, true, false);
+                RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
+                if (RangedDistance <= 28 || RangedDistance >= 32)
+                    RangedDistance = -29;
+                else
+                    RangedDistance = -RangedDistance;
+                GyroDriveENC(RangedDistance + 12, 0.6, 90, true, false, true, true);
+                liftENC(poleHigh, 1);
+
+                reach.setPosition(reachOut);
+                GyroSpin(0.5, -20);
+
+                topLift.setPower(0);
+                bottomLift.setPower(0);
+
+                //GyroDriveENC(1, 0.3, -35, true, true, true, true);
+                grabber.setPosition(openGrabber); //let go of Cone
+                sleep(175);
+                //GyroDriveENC(-2.5, 0.3, -35, true, false);
+                reach.setPosition(reachIn);
+                //GyroDriveENC(-1.75, 0.4, -35, true, false, true, true);
+            }
+            if ((getRuntime() <= 23) && (coneImage == 2)){
+                //turn to stack
+                GyroSpin(0.55, 88);
+
+                // lift arm and drive to grab cone from stack
+                liftENC(coneStack5, -0.6);
+                GyroDriveENC(10, 0.8, 92, true, true, true, true);
+                GyroDriveDistStack(0.25, 90, true, 3);
+
+                // go to encoder 0
+//        GyroDriveENC(4, 0.5, 90, true, false);
+                RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
+                if (RangedDistance <= 28 || RangedDistance >= 32)
+                    RangedDistance = -29;
+                else
+                    RangedDistance = -RangedDistance;
+                GyroDriveENC(RangedDistance + 12, 0.6, 90, true, false, true, true);
+                liftENC(poleHigh, 1);
+
+                reach.setPosition(reachOut);
+                GyroSpin(0.5, -20);
+
+                topLift.setPower(0);
+                bottomLift.setPower(0);
+
+                //GyroDriveENC(1, 0.3, -35, true, true, true, true);
+                grabber.setPosition(openGrabber); //let go of Cone
+                sleep(175);
+                //GyroDriveENC(-2.5, 0.3, -35, true, false);
+                reach.setPosition(reachIn);
+                //GyroDriveENC(-1.75, 0.4, -35, true, false, true, true);
+            }
 
             //################################## PARK!! ###########################
             if (coneImage == 1) {             //Rose
@@ -630,7 +932,7 @@ public class FibbyAuto23 extends LinearOpMode {
             bottomLift.setPower(0);
 
             GyroDriveENC(50, .25, 0, false, false, true, true);
-            GyroSpin(0.6, 38);
+            GyroSpin(0.6, 40);
             reach.setPosition(reachOut);
 
             // move into pole a little and drop cone
@@ -643,7 +945,7 @@ public class FibbyAuto23 extends LinearOpMode {
             GyroDriveENC(-3, 0.4, 44, true, false, true, true);
 
             //turn to stack
-            GyroSpin(0.6, -89);
+            GyroSpin(0.6, -92);
 
             // lift arm and drive to grab cone from stack
             liftENC(coneStack5, -0.6);
@@ -670,12 +972,12 @@ public class FibbyAuto23 extends LinearOpMode {
             ////////////////////////////////// Cone 2 ////////////////////////////////////////
             if (getRuntime() <= 23) {
 
-            GyroSpin(0.55, -90);
+            GyroSpin(0.55, -92);
 
             // lift arm and drive to grab cone from stack
             liftENC(coneStack5, -0.6);
-            GyroDriveENC(13, 0.7, -91, true, true, true, true);
-            GyroDriveDistStack(0.25, -90, true, 4);
+            GyroDriveENC(13, 0.7, -91.5, true, true, true, true);
+            GyroDriveDistStack(0.25, -91, true, 4);
 
             RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
             if (RangedDistance <= 28 || RangedDistance >= 32)
@@ -697,19 +999,45 @@ public class FibbyAuto23 extends LinearOpMode {
         }
 ////////////////////////////////// Cone 3 ////////////////////////////////////////
             if (getRuntime() <= 23) {
-                GyroSpin(0.6, -90);
+                GyroSpin(0.6, -92);
 
                 // lift arm and drive to grab cone from stack
                 liftENC(coneStack5, -0.6);
                 GyroDriveENC(10, 0.7, -91, true, true, true, true);
-                GyroDriveDistStack(0.23, -90, true, 3);
+                GyroDriveDistStack(0.23, -91, true, 3);
 
                 RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
                 if (RangedDistance <= 28 || RangedDistance >= 32)
                     RangedDistance = -29;
                 else
                     RangedDistance = -RangedDistance;
-                GyroDriveENC(RangedDistance + 11.5, 0.6, -90.5, true, false, true, true);
+                GyroDriveENC(RangedDistance + 11.5, 0.6, -91, true, false, true, true);
+                liftENC(poleHigh, 1);
+
+                reach.setPosition(reachOut);
+                GyroSpin(0.6, 18);
+
+                topLift.setPower(0);
+                bottomLift.setPower(0);
+
+                grabber.setPosition(openGrabber);
+                sleep(175);
+                reach.setPosition(reachIn);
+            }
+            if ((getRuntime() <= 22)){
+                GyroSpin(0.6, -92);
+
+                // lift arm and drive to grab cone from stack
+                liftENC(coneStack5, -0.6);
+                GyroDriveENC(10, 0.7, -91.5, true, true, true, true);
+                GyroDriveDistStack(0.23, -91, true, 2);
+
+                RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
+                if (RangedDistance <= 28 || RangedDistance >= 32)
+                    RangedDistance = -29;
+                else
+                    RangedDistance = -RangedDistance;
+                GyroDriveENC(RangedDistance + 11.5, 0.6, -91.5, true, false, true, true);
                 liftENC(poleHigh, 1);
 
                 reach.setPosition(reachOut);
@@ -723,19 +1051,19 @@ public class FibbyAuto23 extends LinearOpMode {
                 reach.setPosition(reachIn);
             }
             if ((getRuntime() <= 23) && (coneImage == 2)){
-                GyroSpin(0.6, -90);
+                GyroSpin(0.6, -93);
 
                 // lift arm and drive to grab cone from stack
                 liftENC(coneStack5, -0.6);
-                GyroDriveENC(10, 0.7, -91, true, true, true, true);
-                GyroDriveDistStack(0.23, -90, true, 2);
+                GyroDriveENC(10, 0.7, -91.5, true, true, true, true);
+                GyroDriveDistStack(0.23, -91, true, 2);
 
                 RangedDistance = rangeSensor.getDistance(DistanceUnit.INCH); // how far away are the poles?
                 if (RangedDistance <= 28 || RangedDistance >= 32)
                     RangedDistance = -29;
                 else
                     RangedDistance = -RangedDistance;
-                GyroDriveENC(RangedDistance + 11.5, 0.6, -90.5, true, false, true, true);
+                GyroDriveENC(RangedDistance + 11.5, 0.6, -91, true, false, true, true);
                 liftENC(poleHigh, 1);
 
                 reach.setPosition(reachOut);
@@ -777,6 +1105,104 @@ public class FibbyAuto23 extends LinearOpMode {
         else if (coneImage == 3){
             GyroStrafeENC(20, 0.5, "right", 0);
         }
+    }
+
+    public void preLoad ()
+    {
+        if (rightSide){
+            conePlow.setPosition(plowHigh);
+
+            liftENC(poleHigh, 1);
+
+            GyroDriveENC(22, 0.7, 0, true, true, true, false);
+            GyroDriveENC(29, 0.35, 0, false, true, true, false);                     // 32 delta
+            GyroDriveENC(54, 0.2, 0, false, true, true, true);
+
+            topLift.setPower(0);
+            bottomLift.setPower(0);
+
+            GyroDriveENC(50, .25, 0, false, false, true, true);
+            GyroSpin(0.5, -42);
+            reach.setPosition(reachOut);
+
+            // move into pole a little and drop cone
+            GyroDriveENC(3.5, 0.5, -44, true, true, true, true);
+            grabber.setPosition(openGrabber);
+            sleep(175);
+            reach.setPosition(reachIn);
+
+            //################################## PARK!! ###########################
+            if (coneImage == 1) {             //Rose
+                liftENC(coneStack5, 0.6);
+                GyroSpin(0.5, -90);
+                GyroDriveENC(12, 0.5, -90, true, true, true, true);
+            } else if (coneImage == 2) {         //Snail
+                liftENC(coneStack5, 0.6);
+                GyroSpin(0.55, -90);
+                GyroDriveENC(-3, 0.5, -90, true, false, true, true);
+            } else {                           //Pineapple
+                //turn to stack
+                liftENC(coneStack5, 0.6);
+                GyroSpin(0.55, 88);
+                // lift arm and drive to grab cone from stack
+                //liftENC(coneStack5, -0.6);
+                GyroDriveENC(15, 0.6, 90, true, true, true, true);
+                //GyroDriveDistStack(0.2, 90, true, 2);
+            }
+        }
+        else {
+            conePlow.setPosition(plowHigh);
+
+            liftENC(poleHigh, 1);
+
+            GyroDriveENC(22, 0.7, 0, true, true, true, false);
+            GyroDriveENC(29, 0.35, 0, false, true, true, false);                     // 32 delta
+            GyroDriveENC(54, 0.2, 0, false, true, true, true);
+
+            topLift.setPower(0);
+            bottomLift.setPower(0);
+
+            GyroDriveENC(50, .25, 0, false, false, true, true);
+            GyroSpin(0.6, 40);
+            reach.setPosition(reachOut);
+
+            // move into pole a little and drop cone
+            GyroDriveENC(2.7, 0.5, 40, true, true, true, true);
+            grabber.setPosition(openGrabber);
+            sleep(150);
+            reach.setPosition(reachIn);
+
+            /////////////////////////////////////////Park////////////////////////////////////
+            if (coneImage == 1) {             //Rose
+                //turn to stack
+                liftENC(coneStack5, 0.6);
+                GyroSpin(0.55, -88);
+                GyroDriveENC(15, 0.6, -90, true, true, true, true);
+            } else if (coneImage == 2) {         //Snail
+                liftENC(coneStack5, 0.6);
+                GyroSpin(0.7, 87);
+                GyroDriveENC(-2, 0.9, 90, true, false, true, true);
+            } else {                        //Pineapple
+                liftENC(coneStack5, 0.6);
+                GyroSpin(0.5, 90);
+                GyroDriveENC(10.2, 0.6, 90, true, true, true, true);
+
+            }
+        }
+    }
+
+    public void midJunction ()
+    {
+        // lift arm + reach out
+        // drive forward to mid junction
+        liftENC(poleMid, 1);
+
+        GyroDriveENC(5, 0.7, 0, true, true, true, false);
+        GyroDriveENC(10, 0.35, 0, false, true, true, false);                     // 32 delta
+        GyroDriveENC(27, 0.2, 0, false, true, true, true);
+
+        topLift.setPower(0);
+        bottomLift.setPower(0);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -924,15 +1350,20 @@ public class FibbyAuto23 extends LinearOpMode {
 
         // set conePlow to low so it will not break
         conePlow.setPosition(plowLow);
-        ReadSensors();
+        //eadSensors();
+        distIntake_reading = distIntake.getDistance(DistanceUnit.MM);
         while ((stack == 1 &&  (distIntake_reading <= 50 || distIntake_reading >= 67))  // single cone
                 ||  // OR
                 (stack >= 2 && (distIntake_reading <= 30 || distIntake_reading >= 50))// stack of Cones
                 && 
                 (opModeIsActive())) {
-                ReadSensors();
+                //ReadSensors();
+
+
                 getRawHeading();
-            sendTelemetry("GyroDriveStack");
+           // sendTelemetry("GyroDriveStack");
+            distIntake_reading = distIntake.getDistance(DistanceUnit.MM);
+            //frontColorDist_reading = ((DistanceSensor) frontColorDist).getDistance(DistanceUnit.MM);
                 corrHeading = course - heading;
                 diffCorrection = Math.abs(corrHeading * P_DRIVE_GAIN);
     
@@ -959,7 +1390,7 @@ public class FibbyAuto23 extends LinearOpMode {
         rightFront.setPower(0);
         rightRear.setPower(0);
 
-        if (stack == 5) {liftENC(coneStack5 - 160, -0.9);}
+        if (stack == 5) {liftENC(coneStack5 - 170, -0.9);}
         else if (stack == 4) {liftENC(coneStack4 - 160, -0.8);}
         else if (stack == 3) {liftENC(coneStack3 -160, -0.8);}
         else if (stack == 2) {liftENC(coneStack2 - 160, -0.8);}
@@ -971,8 +1402,11 @@ public class FibbyAuto23 extends LinearOpMode {
         sleep(300);
 
         liftENC(415, 0.75);
+        telemetry.addData ("Arm UP", "now raise plow");
         conePlow.setPosition(plowHigh);
+        telemetry.addData("Plow", "Raised");
         sleep(250);
+        telemetry.addData("Done sleeping", "for 250ms");
     }
     
     
